@@ -113,7 +113,10 @@ async fn compact(
             }
 
             if let Err(e) = std::fs::remove_file(to_compact_path) {
-                bail!("failed to remove old log file `{to_compact_path:?}`: {e}",);
+                // Don't fail the entire operation - the snapshot was created successfully.
+                // The file may already be gone due to filesystem quirks (especially on Docker overlay FS)
+                // or rapid compaction races. This is a cleanup step that can fail without data loss.
+                tracing::warn!("Could not remove old log file `{to_compact_path:?}`: {e}");
             }
         }
         Err(e) => {
